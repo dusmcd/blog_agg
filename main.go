@@ -4,17 +4,27 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	fmt.Println("Server running on port 8080")
-	runServer()
+	err := godotenv.Load("keys.env")
+	if err != nil {
+		log.Fatal(err)
+	}
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
+
+	fmt.Println("Server running on port", port)
+	runServer(host, port)
 }
 
-func runServer() {
+func runServer(host, port string) {
 	serveMux := http.NewServeMux()
 	server := &http.Server{
-		Addr:    "localhost:8080",
+		Addr:    fmt.Sprintf("%s:%s", host, port),
 		Handler: serveMux,
 	}
 

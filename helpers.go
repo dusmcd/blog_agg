@@ -5,6 +5,10 @@ import (
 	"net/http"
 )
 
+type parameters struct {
+	Name string `json:"name"`
+}
+
 func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
 	if statusCode > 299 {
 		respondWithError(w, statusCode, "interval server error")
@@ -37,4 +41,16 @@ func respondWithError(w http.ResponseWriter, statusCode int, message string) {
 	w.WriteHeader(statusCode)
 
 	w.Write(data)
+}
+
+func decodeJSON(req *http.Request) (parameters, error) {
+	decoder := json.NewDecoder(req.Body)
+	params := parameters{}
+
+	err := decoder.Decode(&params)
+	if err != nil {
+		return parameters{}, err
+	}
+
+	return params, nil
 }

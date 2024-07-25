@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dusmcd/blog_agg/internal/database"
@@ -21,10 +23,19 @@ func readinessHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+/*
+route: /v1/users
+method: POST
+
+	request body: {
+		name: string
+	}
+*/
 func (config *apiConfig) createUserHandler(w http.ResponseWriter, req *http.Request) {
 	params, err := decodeJSON(req)
 	if err != nil {
-		respondWithError(w, 500, err.Error())
+		respondWithError(w, 500, "internal server error")
+		log.Println("error decoding request body")
 		return
 	}
 
@@ -42,22 +53,41 @@ func (config *apiConfig) createUserHandler(w http.ResponseWriter, req *http.Requ
 
 	user, err := config.DB.CreateUser(emptyContext, userParams)
 	if err != nil {
-		respondWithError(w, 500, err.Error())
+		respondWithError(w, 500, "internal server error")
+		log.Println("error creating user in DB")
 		return
 	}
 
-	response := struct {
-		ID        string    `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Name      string    `json:"name"`
-	}{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt.Time,
-		UpdatedAt: user.UpdatedAt.Time,
-		Name:      user.Name,
-	}
+	response := createUserResponse(user)
 
 	respondWithJSON(w, 200, response)
 
+}
+
+/*
+route: /v1/users
+method: GET
+
+	req headers: {
+		Authorization: ApiKey <key>
+	}
+*/
+func (config *apiConfig) getUserByApiKeyHandler(w http.ResponseWriter, req *http.Request) {
+	apiKey := strings.TrimPrefix(req.Header.Get("Authorization"), "ApiKey ")
+
+	user, err := config.DB.GetUserByApiKey(context.Background(), apiKey)
+	if user.ID == "" {
+		respondWithError(w, 404, "user not found")
+		log.Println(err.Error())
+		return
+	}
+
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println(err.Error())
+		return
+	}
+
+	response := createUserResponse(user)
+	respondWithJSON(w, 200, response)
 }

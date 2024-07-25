@@ -3,10 +3,21 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"time"
+
+	"github.com/dusmcd/blog_agg/internal/database"
 )
 
 type parameters struct {
 	Name string `json:"name"`
+}
+
+type userResponse struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
+	ApiKey    string    `json:"api_key"`
 }
 
 func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
@@ -53,4 +64,14 @@ func decodeJSON(req *http.Request) (parameters, error) {
 	}
 
 	return params, nil
+}
+
+func createUserResponse(user database.User) userResponse {
+	return userResponse{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt.Time,
+		UpdatedAt: user.UpdatedAt.Time,
+		Name:      user.Name,
+		ApiKey:    user.Apikey,
+	}
 }

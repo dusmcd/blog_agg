@@ -134,21 +134,26 @@ func (config *apiConfig) createFeedHandler(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	response := struct {
-		ID        string    `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Name      string    `json:"name"`
-		URL       string    `json:"url"`
-		UserID    string    `json:"user_id"`
-	}{
-		ID:        feed.ID,
-		CreatedAt: feed.CreatedAt.Time,
-		UpdatedAt: feed.UpdatedAt.Time,
-		Name:      feed.Name,
-		URL:       feed.Url,
-		UserID:    feed.UserID,
+	response := createFeedResponse(feed)
+	respondWithJSON(w, 200, response)
+}
+
+/*
+route: /v1/feeds
+method: GET
+*/
+func (config *apiConfig) getFeedsHandler(w http.ResponseWriter, req *http.Request) {
+	feeds, err := config.DB.GetFeeds(context.Background())
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println("error fetching feeds from DB")
+		return
 	}
 
-	respondWithJSON(w, 200, response)
+	feedsResponse := []feedResponse{}
+	for _, feed := range feeds {
+		feedsResponse = append(feedsResponse, createFeedResponse(feed))
+	}
+
+	respondWithJSON(w, 200, feedsResponse)
 }

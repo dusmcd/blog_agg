@@ -8,6 +8,15 @@ import (
 	"database/sql"
 )
 
+type Feed struct {
+	ID        string
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	Name      string
+	Url       string
+	UserID    string
+}
+
 type User struct {
 	ID        string
 	CreatedAt sql.NullTime

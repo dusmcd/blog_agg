@@ -58,4 +58,5 @@ func registerHandlers(serveMux *http.ServeMux, config *apiConfig) {
 	serveMux.HandleFunc("GET /ready", readinessHandler)
 	serveMux.HandleFunc("POST /v1/users", config.createUserHandler)
 	serveMux.HandleFunc("GET /v1/users", config.getUserByApiKeyHandler)
+	serveMux.Handle("POST /v1/feeds", config.authenticateUser(config.createFeedHandler))
 }

@@ -75,7 +75,7 @@ method: GET
 func (config *apiConfig) getUserByApiKeyHandler(w http.ResponseWriter, req *http.Request) {
 	apiKey := strings.TrimPrefix(req.Header.Get("Authorization"), "ApiKey ")
 
-	user, err := config.DB.GetUserByApiKey(context.Background(), apiKey)
+	user, err := getUserByApiKey(config.DB, apiKey)
 	if user.ID == "" {
 		respondWithError(w, 404, "user not found")
 		log.Println(err.Error())
@@ -89,5 +89,66 @@ func (config *apiConfig) getUserByApiKeyHandler(w http.ResponseWriter, req *http
 	}
 
 	response := createUserResponse(user)
+	respondWithJSON(w, 200, response)
+}
+
+/*
+route: /v1/feeds
+method: POST
+
+	req headers: {
+		Authorization: ApiKey <key>
+	}
+	req body: {
+		name: string,
+		url: string
+	}
+*/
+func (config *apiConfig) createFeedHandler(w http.ResponseWriter, req *http.Request) {
+	apiKey := strings.TrimPrefix(req.Header.Get("Authorization"), "ApiKey ")
+	params, err := decodeJSON(req)
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println("error decoding request json")
+		return
+	}
+
+	currentTime := sql.NullTime{
+		Time:  time.Now().UTC(),
+		Valid: true,
+	}
+
+	feedParams := database.CreateFeedParams{
+		ID:        uuid.NewString(),
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
+		Name:      params.Name,
+		Url:       params.URL,
+		Apikey:    apiKey,
+	}
+
+	feed, err := config.DB.CreateFeed(context.Background(), feedParams)
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println("error creating feed in DB")
+		return
+	}
+
+	response := struct {
+		ID        string    `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Name      string    `json:"name"`
+		URL       string    `json:"url"`
+		UserID    string    `json:"user_id"`
+	}{
+		ID:        feed.ID,
+		CreatedAt: feed.CreatedAt.Time,
+		UpdatedAt: feed.UpdatedAt.Time,
+		Name:      feed.Name,
+		URL:       feed.Url,
+		UserID:    feed.UserID,
+	}
+
 	respondWithJSON(w, 200, response)
 }

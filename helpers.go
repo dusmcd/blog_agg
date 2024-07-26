@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 type parameters struct {
 	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 type userResponse struct {
@@ -74,4 +76,11 @@ func createUserResponse(user database.User) userResponse {
 		Name:      user.Name,
 		ApiKey:    user.Apikey,
 	}
+}
+
+func getUserByApiKey(db *database.Queries, apiKey string) (database.User, error) {
+	user, err := db.GetUserByApiKey(context.Background(), apiKey)
+
+	return user, err
+
 }

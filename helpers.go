@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/dusmcd/blog_agg/internal/database"
+	"github.com/google/uuid"
 )
 
 type parameters struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Name   string `json:"name"`
+	URL    string `json:"url"`
+	FeedID string `json:"feed_id"`
 }
 
 type userResponse struct {
@@ -103,4 +106,22 @@ func createFeedResponse(feed database.Feed) feedResponse {
 		URL:       feed.Url,
 		UserID:    feed.UserID,
 	}
+}
+
+func followFeed(DB *database.Queries, feedID, userID string) (database.FeedsUser, error) {
+	currentTime := sql.NullTime{
+		Time:  time.Now().UTC(),
+		Valid: true,
+	}
+	followParams := database.FollowFeedParams{
+		ID:        uuid.NewString(),
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
+		FeedID:    feedID,
+		UserID:    userID,
+	}
+
+	feedsUsers, err := DB.FollowFeed(context.Background(), followParams)
+
+	return feedsUsers, err
 }

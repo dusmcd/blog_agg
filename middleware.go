@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-func (config *apiConfig) authenticateUser(next func(w http.ResponseWriter, req *http.Request)) http.Handler {
+func (config *apiConfig) authenticateUser(
+	next func(w http.ResponseWriter, req *http.Request, userID string)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		apiKey := strings.TrimPrefix(req.Header.Get("Authorization"), "ApiKey ")
 		user, err := getUserByApiKey(config.DB, apiKey)
@@ -19,6 +20,6 @@ func (config *apiConfig) authenticateUser(next func(w http.ResponseWriter, req *
 			log.Println(err.Error())
 			return
 		}
-		next(w, req)
+		next(w, req, user.ID)
 	})
 }

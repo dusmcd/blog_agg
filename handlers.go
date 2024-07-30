@@ -12,6 +12,10 @@ import (
 	"github.com/google/uuid"
 )
 
+/*
+route: /ready
+method: GET
+*/
 func readinessHandler(w http.ResponseWriter, req *http.Request) {
 	response := struct {
 		Status string `json:"status"`
@@ -104,7 +108,7 @@ method: POST
 		url: string
 	}
 */
-func (config *apiConfig) createFeedHandler(w http.ResponseWriter, req *http.Request) {
+func (config *apiConfig) createFeedHandler(w http.ResponseWriter, req *http.Request, userID string) {
 	apiKey := strings.TrimPrefix(req.Header.Get("Authorization"), "ApiKey ")
 	params, err := decodeJSON(req)
 	if err != nil {
@@ -156,4 +160,47 @@ func (config *apiConfig) getFeedsHandler(w http.ResponseWriter, req *http.Reques
 	}
 
 	respondWithJSON(w, 200, feedsResponse)
+}
+
+/*
+route: /v1/feed_follows
+method: POST
+
+	req body: {
+		feed_id: string
+	}
+
+	req headers: {
+		Authorization: ApiKey <key>
+	}
+*/
+func (config *apiConfig) followFeedHandler(w http.ResponseWriter, req *http.Request, userID string) {
+	params, err := decodeJSON(req)
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println("error decoding json response")
+		return
+	}
+
+	feedsUsers, err := followFeed(config.DB, params.FeedID, userID)
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println("error creating feed follow in DB")
+		return
+	}
+
+	response := struct {
+		ID        string    `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		FeedID    string    `json:"feed_id"`
+		UserID    string    `json:"user_id"`
+	}{
+		ID:        feedsUsers.ID,
+		CreatedAt: feedsUsers.CreatedAt.Time,
+		UpdatedAt: feedsUsers.UpdatedAt.Time,
+		FeedID:    feedsUsers.FeedID,
+		UserID:    feedsUsers.UserID,
+	}
+	respondWithJSON(w, 200, response)
 }

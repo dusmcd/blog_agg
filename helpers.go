@@ -125,3 +125,8 @@ func followFeed(DB *database.Queries, feedID, userID string) (database.FeedsUser
 
 	return feedsUsers, err
 }
+
+func getFeedByID(DB *database.Queries, feedID string) (database.Feed, error) {
+	feed, err := DB.GetFeedById(context.Background(), feedID)
+	return feed, err
+}

@@ -138,6 +138,11 @@ func (config *apiConfig) createFeedHandler(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	_, err = followFeed(config.DB, feed.ID, userID)
+	if err != nil {
+		log.Println("error following created feed for user id", userID)
+	}
+
 	response := createFeedResponse(feed)
 	respondWithJSON(w, 200, response)
 }
@@ -181,6 +186,17 @@ func (config *apiConfig) followFeedHandler(w http.ResponseWriter, req *http.Requ
 		log.Println("error decoding json response")
 		return
 	}
+	feed, err := getFeedByID(config.DB, params.FeedID)
+	if feed.ID == "" {
+		respondWithError(w, 404, "invalid feed id")
+		log.Println(err.Error())
+		return
+	}
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println("error fetching feed from DB")
+		return
+	}
 
 	feedsUsers, err := followFeed(config.DB, params.FeedID, userID)
 	if err != nil {
@@ -203,4 +219,56 @@ func (config *apiConfig) followFeedHandler(w http.ResponseWriter, req *http.Requ
 		UserID:    feedsUsers.UserID,
 	}
 	respondWithJSON(w, 200, response)
+}
+
+/*
+route: /v1/feed_follows
+method: GET
+
+	req headers: {
+		Authorization: ApiKey <key>
+	}
+*/
+func (config *apiConfig) getFeedsFollowedHandler(w http.ResponseWriter, req *http.Request, userID string) {
+	feeds, err := config.DB.GetFeedsFollowed(context.Background(), userID)
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println("error fetching feeds followed")
+		return
+	}
+
+	response := []feedResponse{}
+	for _, feed := range feeds {
+		feedRes := feedResponse{
+			ID:        feed.ID,
+			UserID:    feed.UserID,
+			CreatedAt: feed.CreatedAt.Time,
+			UpdatedAt: feed.UpdatedAt.Time,
+			Name:      feed.Name,
+			URL:       feed.Url,
+		}
+		response = append(response, feedRes)
+	}
+
+	respondWithJSON(w, 200, response)
+}
+
+/*
+route: /v1/feed_follows/{feedFollowID}
+method: DELETE
+
+	req headers: {
+		Authorization: ApiKey <key>
+	}
+*/
+func (config *apiConfig) unfollowFeedHandler(w http.ResponseWriter, req *http.Request, userID string) {
+	feedFollowID := req.PathValue("feedFollowID")
+	err := config.DB.UnfollowFeed(context.Background(), feedFollowID)
+	if err != nil {
+		respondWithError(w, 500, "internal server error")
+		log.Println(err.Error())
+		return
+	}
+
+	w.WriteHeader(204)
 }

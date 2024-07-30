@@ -61,4 +61,7 @@ func registerHandlers(serveMux *http.ServeMux, config *apiConfig) {
 	serveMux.Handle("POST /v1/feeds", config.authenticateUser(config.createFeedHandler))
 	serveMux.HandleFunc("GET /v1/feeds", config.getFeedsHandler)
 	serveMux.Handle("POST /v1/feed_follows", config.authenticateUser(config.followFeedHandler))
+	serveMux.Handle("GET /v1/feed_follows", config.authenticateUser(config.getFeedsFollowedHandler))
+	serveMux.Handle("DELETE /v1/feed_follows/{feedFollowID}",
+		config.authenticateUser(config.unfollowFeedHandler))
 }
